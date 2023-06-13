@@ -1,0 +1,94 @@
+using ExcelDna.Integration;
+using ExcelDna.Integration.CustomUI;
+using Excel = Microsoft.Office.Interop.Excel;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
+
+public class MyExcelAddin
+{
+    private static Excel.Application _excelApp;
+
+    [ExcelFunction(Description = "Retrieve data based on computeDate and FundKey.")]
+    public static object[,] GetData(
+        [ExcelArgument(Name = "computeDate", Description = "Date of computation.")] DateTime computeDate,
+        [ExcelArgument(Name = "FundKey", Description = "Key for the fund.")] string fundKey,
+        [ExcelArgument(Name = "Destination", Description = "Destination cell for writing the data.")] string destination)
+    {
+        // Votre code pour récupérer les données en fonction de computeDate et FundKey
+        DataTable dataTable = GetDataTable(computeDate, fundKey);
+
+        // Convertir le DataTable en une matrice à deux dimensions
+        int rows = dataTable.Rows.Count;
+        int columns = dataTable.Columns.Count;
+        object[,] data = new object[rows, columns];
+
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < columns; j++)
+            {
+                data[i, j] = dataTable.Rows[i][j];
+            }
+        }
+
+        // Écrire les données dans Excel à l'emplacement spécifié par l'utilisateur
+        WriteDataToExcel(data, destination);
+
+        return data;
+    }
+
+    [ExcelFunction(Description = "Retrieve registered portfolios based on computeDate.")]
+    public static object[,] GetRegisteredPortfolios(
+        [ExcelArgument(Name = "computeDate", Description = "Date of computation.")] DateTime computeDate)
+    {
+        // Votre code pour récupérer les portefeuilles enregistrés en fonction de computeDate
+        List<string> portfolios = GetRegisteredPortfolios(computeDate);
+
+        // Convertir la liste de portefeuilles en une matrice à deux dimensions
+        int rows = portfolios.Count;
+        int columns = 1; // Une seule colonne pour les noms de portefeuilles
+        object[,] data = new object[rows, columns];
+
+        for (int i = 0; i < rows; i++)
+        {
+            data[i, 0] = portfolios[i];
+        }
+
+        return data;
+    }
+
+    // Méthode de test pour obtenir un DataTable
+    private static DataTable GetDataTable(DateTime computeDate, string fundKey)
+    {
+        // Votre code pour récupérer les données réelles
+        // ...
+
+        // Exemple de création d'un DataTable avec des données fictives
+        DataTable dataTable = new DataTable();
+        dataTable.Columns.Add("Col1");
+        dataTable.Columns.Add("Col2");
+        dataTable.Rows.Add("Value1", "Value2");
+
+        return dataTable;
+    }
+
+    // Méthode de test pour obtenir une liste de portefeuilles
+    private static List<string> GetRegisteredPortfolios(DateTime computeDate)
+    {
+        // Votre code pour récupérer les portefeuilles réels
+        // ...
+
+        // Exemple de création d'une liste de portefeuilles fictifs
+        List<string> portfolios = new List<string>()
+        {
+            "Portfolio1",
+            "Portfolio2",
+            "Portfolio3"
+        };
+
+        return portfolios;
+    }
+
+    // Méthode pour écrire les données dans Excel à l'emplacement spécifié
+    private
