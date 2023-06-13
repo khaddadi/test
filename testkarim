@@ -1,9 +1,6 @@
 using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 using Excel = Microsoft.Office.Interop.Excel;
-using System;
-using System.Collections.Generic;
-using System.Data;
 using System.Threading.Tasks;
 
 public class MyExcelAddin
@@ -16,79 +13,66 @@ public class MyExcelAddin
         [ExcelArgument(Name = "FundKey", Description = "Key for the fund.")] string fundKey,
         [ExcelArgument(Name = "Destination", Description = "Destination cell for writing the data.")] string destination)
     {
-        // Votre code pour récupérer les données en fonction de computeDate et FundKey
-        DataTable dataTable = GetDataTable(computeDate, fundKey);
+        Task<object[,]> getDataTask = Task.Run(() => GetDataAsync(computeDate, fundKey, destination));
+        getDataTask.ConfigureAwait(false);
 
-        // Convertir le DataTable en une matrice à deux dimensions
-        int rows = dataTable.Rows.Count;
-        int columns = dataTable.Columns.Count;
-        object[,] data = new object[rows, columns];
-
-        for (int i = 0; i < rows; i++)
-        {
-            for (int j = 0; j < columns; j++)
-            {
-                data[i, j] = dataTable.Rows[i][j];
-            }
-        }
-
-        // Écrire les données dans Excel à l'emplacement spécifié par l'utilisateur
-        WriteDataToExcel(data, destination);
-
-        return data;
+        return getDataTask.Result;
     }
 
-    [ExcelFunction(Description = "Retrieve registered portfolios based on computeDate.")]
-    public static object[,] GetRegisteredPortfolios(
-        [ExcelArgument(Name = "computeDate", Description = "Date of computation.")] DateTime computeDate)
+    private static async Task<object[,]> GetDataAsync(DateTime computeDate, string fundKey, string destination)
     {
-        // Votre code pour récupérer les portefeuilles enregistrés en fonction de computeDate
-        List<string> portfolios = GetRegisteredPortfolios(computeDate);
-
-        // Convertir la liste de portefeuilles en une matrice à deux dimensions
-        int rows = portfolios.Count;
-        int columns = 1; // Une seule colonne pour les noms de portefeuilles
-        object[,] data = new object[rows, columns];
-
-        for (int i = 0; i < rows; i++)
+        try
         {
-            data[i, 0] = portfolios[i];
-        }
+            // Votre code pour récupérer les données en fonction de computeDate et FundKey
+            DataTable dataTable = await GetDataTableAsync(computeDate, fundKey);
 
-        return data;
+            // Convertir le DataTable en une matrice à deux dimensions
+            int rows = dataTable.Rows.Count;
+            int columns = dataTable.Columns.Count;
+            object[,] data = new object[rows, columns];
+
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < columns; j++)
+                {
+                    data[i, j] = dataTable.Rows[i][j];
+                }
+            }
+
+            // Écrire les données dans Excel à l'emplacement spécifié par l'utilisateur
+            await WriteDataToExcelAsync(data, destination);
+
+            return data;
+        }
+        catch (Exception ex)
+        {
+            // Remonter l'erreur à l'utilisateur en tant que valeur d'erreur Excel
+            return ExcelError.ExcelErrorValue;
+        }
     }
 
-    // Méthode de test pour obtenir un DataTable
-    private static DataTable GetDataTable(DateTime computeDate, string fundKey)
+    // Méthode asynchrone pour obtenir un DataTable
+    private static async Task<DataTable> GetDataTableAsync(DateTime computeDate, string fundKey)
     {
         // Votre code pour récupérer les données réelles
         // ...
 
-        // Exemple de création d'un DataTable avec des données fictives
-        DataTable dataTable = new DataTable();
-        dataTable.Columns.Add("Col1");
-        dataTable.Columns.Add("Col2");
-        dataTable.Rows.Add("Value1", "Value2");
-
-        return dataTable;
+        // Exemple de levée d'une exception pour simuler une erreur
+        throw new Exception("Une erreur s'est produite lors de la récupération des données.");
     }
 
-    // Méthode de test pour obtenir une liste de portefeuilles
-    private static List<string> GetRegisteredPortfolios(DateTime computeDate)
+    // Méthode asynchrone pour écrire les données dans Excel à l'emplacement spécifié
+    private static async Task WriteDataToExcelAsync(object[,] data, string destination)
     {
-        // Votre code pour récupérer les portefeuilles réels
-        // ...
-
-        // Exemple de création d'une liste de portefeuilles fictifs
-        List<string> portfolios = new List<string>()
+        if (_excelApp == null)
         {
-            "Portfolio1",
-            "Portfolio2",
-            "Portfolio3"
-        };
+            _excelApp = (Excel.Application)ExcelDnaUtil.Application;
+        }
 
-        return portfolios;
+        await Task.Run(() =>
+        {
+            Excel.Range range = _excelApp.Range[destination];
+            range.Resize[data.GetLength(0), data.GetLength(1)].Value = data;
+        });
     }
-
-    // Méthode pour écrire les données dans Excel à l'emplacement spécifié
-    private
+}
