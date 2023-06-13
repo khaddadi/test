@@ -1,78 +1,67 @@
-using ExcelDna.Integration;
-using ExcelDna.Integration.CustomUI;
-using Excel = Microsoft.Office.Interop.Excel;
-using System.Threading.Tasks;
-
-public class MyExcelAddin
+[ExcelFunction(Description = "Retrieve data based on list of computeDates and FundKey.")]
+public static object[,] GetData(
+    [ExcelArgument(Name = "computeDates", Description = "List of computation dates.")] ExcelReference computeDatesRef,
+    [ExcelArgument(Name = "FundKey", Description = "Key for the fund.")] string fundKey,
+    [ExcelArgument(Name = "Destination", Description = "Destination cell for writing the data.")] string destination)
 {
-    private static Excel.Application _excelApp;
-
-    [ExcelFunction(Description = "Retrieve data based on computeDate and FundKey.")]
-    public static object[,] GetData(
-        [ExcelArgument(Name = "computeDate", Description = "Date of computation.")] DateTime computeDate,
-        [ExcelArgument(Name = "FundKey", Description = "Key for the fund.")] string fundKey,
-        [ExcelArgument(Name = "Destination", Description = "Destination cell for writing the data.")] string destination)
+    if (!ExcelAsyncUtil.IsCalledFromExcel)
     {
-        Task<object[,]> getDataTask = Task.Run(() => GetDataAsync(computeDate, fundKey, destination));
-        getDataTask.ConfigureAwait(false);
-
-        return getDataTask.Result;
+        // La fonction est appelée en dehors d'Excel, exécution synchrone
+        object[,] computeDatesArray = (object[,])computeDatesRef.GetValue();
+        ProcessGetData(computeDatesArray, fundKey, destination);
+        return computeDatesArray;
     }
-
-    private static async Task<object[,]> GetDataAsync(DateTime computeDate, string fundKey, string destination)
+    else
     {
-        try
+        // La fonction est appelée depuis Excel, exécution asynchrone avec matrice volatile
+        return ExcelAsyncUtil.Run("GetData", new object[] { computeDatesRef, fundKey, destination }, () =>
         {
-            // Votre code pour récupérer les données en fonction de computeDate et FundKey
-            DataTable dataTable = await GetDataTableAsync(computeDate, fundKey);
-
-            // Convertir le DataTable en une matrice à deux dimensions
-            int rows = dataTable.Rows.Count;
-            int columns = dataTable.Columns.Count;
-            object[,] data = new object[rows, columns];
-
-            for (int i = 0; i < rows; i++)
-            {
-                for (int j = 0; j < columns; j++)
-                {
-                    data[i, j] = dataTable.Rows[i][j];
-                }
-            }
-
-            // Écrire les données dans Excel à l'emplacement spécifié par l'utilisateur
-            await WriteDataToExcelAsync(data, destination);
-
-            return data;
-        }
-        catch (Exception ex)
-        {
-            // Remonter l'erreur à l'utilisateur en tant que valeur d'erreur Excel
-            return ExcelError.ExcelErrorValue;
-        }
-    }
-
-    // Méthode asynchrone pour obtenir un DataTable
-    private static async Task<DataTable> GetDataTableAsync(DateTime computeDate, string fundKey)
-    {
-        // Votre code pour récupérer les données réelles
-        // ...
-
-        // Exemple de levée d'une exception pour simuler une erreur
-        throw new Exception("Une erreur s'est produite lors de la récupération des données.");
-    }
-
-    // Méthode asynchrone pour écrire les données dans Excel à l'emplacement spécifié
-    private static async Task WriteDataToExcelAsync(object[,] data, string destination)
-    {
-        if (_excelApp == null)
-        {
-            _excelApp = (Excel.Application)ExcelDnaUtil.Application;
-        }
-
-        await Task.Run(() =>
-        {
-            Excel.Range range = _excelApp.Range[destination];
-            range.Resize[data.GetLength(0), data.GetLength(1)].Value = data;
+            object[,] computeDatesArray = (object[,])computeDatesRef.GetValue();
+            ProcessGetData(computeDatesArray, fundKey, destination);
+            return computeDatesArray;
         });
     }
+}
+
+private static void ProcessGetData(object[,] computeDatesArray, string fundKey, string destination)
+{
+    // Votre code pour traiter les données en fonction de la matrice de dates et du FundKey
+    // ...
+}
+
+[ExcelFunction(Description = "Retrieve registered portfolios based on computeDate.")]
+public static object[,] GetRegisteredPortfolios(
+    [ExcelArgument(Name = "computeDate", Description = "Date of computation.")] DateTime computeDate)
+{
+    if (!ExcelAsyncUtil.IsCalledFromExcel)
+    {
+        // La fonction est appelée en dehors d'Excel, exécution synchrone
+        return ProcessGetRegisteredPortfolios(computeDate);
+    }
+    else
+    {
+        // La fonction est appelée depuis Excel, exécution asynchrone avec matrice volatile
+        return ExcelAsyncUtil.Run("GetRegisteredPortfolios", new object[] { computeDate }, () =>
+        {
+            return ProcessGetRegisteredPortfolios(computeDate);
+        });
+    }
+}
+
+private static object[,] ProcessGetRegisteredPortfolios(DateTime computeDate)
+{
+    // Votre code pour récupérer les portefeuilles enregistrés en fonction de computeDate
+    List<string> portfolios = GetRegisteredPortfolios(computeDate);
+
+    // Convertir la liste de portefeuilles en une matrice à deux dimensions
+    int rows = portfolios.Count;
+    int columns = 1; // Une seule colonne pour les noms de portefeuilles
+    object[,] data = new object[rows, columns];
+
+    for (int i = 0; i < rows; i++)
+    {
+        data[i, 0] = portfolios[i];
+    }
+
+    return data;
 }
