@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ExcelDna xmlns="http://schemas.excel-dna.net/addin/2017/manifest">
+  <ExternalLibrary Path="YourAddinName.dll" />
+</ExcelDna>
