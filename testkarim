@@ -8,16 +8,40 @@ public static async Task<object> GetData(
     return await ExcelAsyncUtil.Run("GetData", new object[] { computeDatesRef, fundKey, dataSourceName, destination }, async () =>
     {
         object[,] computeDatesArray = (object[,])computeDatesRef.GetValue();
-        await ProcessGetDataAsync(computeDatesArray, fundKey, dataSourceName, destination);
-        return computeDatesArray;
+        object[,] data = await ProcessGetDataAsync(computeDatesArray, fundKey, dataSourceName, destination);
+        ExcelReference destinationRef = XlCall.Excel(XlCall.xlfCaller) as ExcelReference;
+        ExcelAsyncUtil.QueueAsMacro(() =>
+        {
+            ExcelAsyncUtil.Excel4Async(() =>
+            {
+                destinationRef.SetValue(data);
+                return null;
+            });
+        });
+        return data;
     });
 }
 
-private static async Task ProcessGetDataAsync(object[,] computeDatesArray, string fundKey, string dataSourceName, string destination)
+private static async Task<object[,]> ProcessGetDataAsync(object[,] computeDatesArray, string fundKey, string dataSourceName, string destination)
 {
     // Votre code asynchrone pour traiter les données en fonction de la matrice de dates, du FundKey et du dataSourceName
     // Utilisez les méthodes asynchrones et await lorsque cela est nécessaire
     // ...
 
     await Task.Delay(1000); // Exemple de délai asynchrone
+
+    // Exemple de génération de données pour la matrice de sortie
+    int rows = computeDatesArray.GetLength(0);
+    int columns = computeDatesArray.GetLength(1);
+    object[,] data = new object[rows, columns];
+
+    for (int row = 0; row < rows; row++)
+    {
+        for (int col = 0; col < columns; col++)
+        {
+            data[row, col] = $"Data for {computeDatesArray[row, col]}, {fundKey}, {dataSourceName}";
+        }
+    }
+
+    return data;
 }
