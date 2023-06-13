@@ -10,14 +10,16 @@ public static async Task<object> GetData(
         object[,] computeDatesArray = (object[,])computeDatesRef.GetValue();
         object[,] data = await ProcessGetDataAsync(computeDatesArray, fundKey, dataSourceName, destination);
         ExcelReference destinationRef = XlCall.Excel(XlCall.xlfCaller) as ExcelReference;
-        ExcelAsyncUtil.QueueAsMacro(() =>
+        
+        await ExcelAsyncUtil.QueueAsMacro(() =>
         {
-            ExcelAsyncUtil.Excel4Async(() =>
+            ExcelAsyncUtil.Queue(() =>
             {
                 destinationRef.SetValue(data);
                 return null;
             });
         });
+
         return data;
     });
 }
