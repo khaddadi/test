@@ -33,7 +33,7 @@ private static async Task<object[,]> ProcessGetDataAsync(object[,] computeDatesA
     await Task.Delay(1000); // Exemple de délai asynchrone
 
     // Exemple de génération de données pour la matrice de sortie
-    int rows = computeDatesArray.GetLength(0);
+    int rows = computeDatesArray.GetLength(0);   
     int columns = computeDatesArray.GetLength(1);
     object[,] data = new object[rows, columns];
 
